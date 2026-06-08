@@ -61,7 +61,7 @@ fn batched_matmul<D: Floating + 'static>(a: &ArrayD<D>, b: &ArrayD<D>) -> ArrayD
         .and(b_reshaped.outer_iter())
         .and(r_reshaped.outer_iter_mut())
         .for_each(|ai, bi, mut ri| {
-            general_mat_mul(D::one(), &ai, &bi, D::zero(), &mut ri);
+            gemm_impl(D::one(), &ai, &bi, D::zero(), &mut ri);
         });
 
     result
@@ -110,7 +110,7 @@ pub fn matmul<D: Floating + 'static>(a: &TensorData<D>, b: &TensorData<D>) -> Te
 
             let mut result = Array::zeros(m);
             // (1×n) × (n×m) → (m,)
-            general_mat_vec_mul(D::one(), &b2.t(), &a1, D::zero(), &mut result);
+            gemv_impl(D::one(), &b2.t(), &a1, D::zero(), &mut result);
             result.into_dyn()
         }
 
@@ -133,7 +133,7 @@ pub fn matmul<D: Floating + 'static>(a: &TensorData<D>, b: &TensorData<D>) -> Te
                 .expect("an ndim=2 tensor should be convertible to a 2D view");
 
             let mut result = Array::zeros(m);
-            general_mat_vec_mul(D::one(), &a2, &b1, D::zero(), &mut result);
+            gemv_impl(D::one(), &a2, &b1, D::zero(), &mut result);
             result.into_dyn()
         }
 
@@ -156,7 +156,7 @@ pub fn matmul<D: Floating + 'static>(a: &TensorData<D>, b: &TensorData<D>) -> Te
                 .expect("an ndim=2 tensor should be convertible to a 2D view");
 
             let mut result = Array::zeros((m, n));
-            general_mat_mul(D::one(), &a2, &b2, D::zero(), &mut result);
+            gemm_impl(D::one(), &a2, &b2, D::zero(), &mut result);
             result.into_dyn()
         }
 
