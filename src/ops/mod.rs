@@ -184,8 +184,8 @@ pub mod macros {
                 fn inputs(&self) -> $crate::ops::IdList {
                     smallvec::smallvec![self.inp]
                 }
-                fn outputs(&self) -> Vec<Id> {
-                    vec![self.out]
+                fn outputs(&self) -> $crate::ops::IdList {
+                    smallvec::smallvec![self.out]
                 }
             }
         };
