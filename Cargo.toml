@@ -9,15 +9,19 @@ license = "BSD-3-Clause"
 keywords = ["autograd", "autodiff", "numeric"]
 
 
-[features]
-nightly-fn = []
-
 [dependencies]
 ndarray = "0.16.1"
-ndarray-stats = "0.6.0"
 num-traits = "0.2.19"
 chainrule-macros = { path = "chainrule-macros" }
 itertools = "0.13.0"
+smallvec = "1.15.1"
+
+[dev-dependencies]
+criterion = "0.8.2"
+
+[[bench]]
+name = "ops"
+harness = false
 
 [workspace]
 members = ["chainrule-macros"]

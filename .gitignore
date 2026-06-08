@@ -1,3 +1,19 @@
-/target
-.vscode
-*.txt
+*
+
+# misc
+!.editorconfig
+!.gitignore
+
+# project files
+!Cargo.toml
+!Cargo.lock
+!LICENSE
+!README.md
+
+# source tree
+!src/
+!src/**/*
+
+# macro crate
+!chainrule-macros/
+!chainrule-macros/**/*
