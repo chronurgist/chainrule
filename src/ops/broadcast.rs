@@ -10,7 +10,7 @@ pub struct Broadcast {
     inp: Id,
     out: Id,
     // inp_shape: Vec<usize>,
-    target_shape: Vec<usize>,
+    target_shape: Box<[usize]>,
 }
 
 impl Broadcast {
@@ -18,7 +18,7 @@ impl Broadcast {
         Self {
             inp,
             out,
-            target_shape: target.into(),
+            target_shape: target.into().into_boxed_slice(),
         }
     }
 }
@@ -31,7 +31,7 @@ impl<D: Floating> Op<D> for Broadcast {
     fn eval(&self, ctx: &mut Context<D>) {
         let t = ctx.checked_get(&self.inp);
         let t = t
-            .broadcast(self.target_shape.clone())
+            .broadcast(ndarray::IxDyn(&self.target_shape))
             .expect("failed to broadcast. dimension mismatch");
 
         ctx.insert(self.out, t.to_owned());
@@ -45,12 +45,12 @@ impl<D: Floating> Op<D> for Broadcast {
         Some(vec![out])
     }
 
-    fn inputs(&self) -> Vec<Id> {
-        vec![self.inp]
+    fn inputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.inp]
     }
 
-    fn outputs(&self) -> Vec<Id> {
-        vec![self.out]
+    fn outputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.out]
     }
 }
 
@@ -105,10 +105,10 @@ impl<D: Floating> Op<D> for BroadcastLike {
         Some(vec![out])
     }
 
-    fn inputs(&self) -> Vec<Id> {
-        vec![self.inp, self.like]
+    fn inputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.inp, self.like]
     }
-    fn outputs(&self) -> Vec<Id> {
-        vec![self.out]
+    fn outputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.out]
     }
 }
