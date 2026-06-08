@@ -6,7 +6,7 @@ use crate::{
 };
 use ndarray::{
     Array, ArrayD, ArrayView1, Ix1, Ix2, IxDyn,
-    linalg::{general_mat_mul, general_mat_vec_mul},
+    linalg::{general_mat_mul as gemm_impl, general_mat_vec_mul as gemv_impl},
 };
 
 use crate::{Floating, tracing::TensorData};

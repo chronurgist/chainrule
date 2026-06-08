@@ -66,7 +66,7 @@ impl<D: Floating + 'static> Op<D> for Mean {
         }
 
         // divide by the count of reduced elements
-        let shape = x.shape().to_vec();
+        let shape = x.shape();
         let mut denom = D::one();
         for &ax in &self.axis {
             denom = denom * D::from_f64(shape[ax] as f64);

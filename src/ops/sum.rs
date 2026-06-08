@@ -34,7 +34,7 @@ impl<D: Floating> Op<D> for Sum {
     }
 
     fn eval(&self, ctx: &mut Context<D>) {
-        let t_in = ctx.checked_get(&self.inp).clone();
+        let t_in = ctx.checked_get(&self.inp);
 
         let result = if self.axis.is_empty() {
             // If no axes are specified, sum all elements to a scalar.
@@ -79,12 +79,12 @@ impl<D: Floating> Op<D> for Sum {
         Some(vec![broadcast_out_id])
     }
 
-    fn inputs(&self) -> Vec<Id> {
-        vec![self.inp]
+    fn inputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.inp]
     }
 
-    fn outputs(&self) -> Vec<Id> {
-        vec![self.out]
+    fn outputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.out]
     }
 }
 
@@ -123,13 +123,13 @@ impl<D: Floating> Op<D> for ReduceToLike {
     fn eval(&self, ctx: &mut Context<D>) {
         use ndarray::Axis;
 
-        let t = ctx.checked_get(&self.inp).clone();
+        let inp = ctx.checked_get(&self.inp);
         let like = ctx.checked_get(&self.like);
-        let a_shape = t.shape().to_owned();
+        let a_shape = inp.shape();
         let b_shape = like.shape();
 
         if a_shape == b_shape {
-            ctx.insert(self.out, t);
+            ctx.insert(self.out, inp.clone());
             return;
         }
 
@@ -177,11 +177,11 @@ impl<D: Floating> Op<D> for ReduceToLike {
         Some(vec![out])
     }
 
-    fn inputs(&self) -> Vec<Id> {
-        vec![self.inp, self.like]
+    fn inputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.inp, self.like]
     }
-    fn outputs(&self) -> Vec<Id> {
-        vec![self.out]
+    fn outputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.out]
     }
 }
 
@@ -208,23 +208,23 @@ impl<D: Floating> Op<D> for ReshapeForBroadcast {
     fn name(&self) -> &'static str {
         "reshape_for_broadcast"
     }
-    fn inputs(&self) -> Vec<Id> {
-        vec![self.inp_grad]
+    fn inputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.inp_grad]
     }
-    fn outputs(&self) -> Vec<Id> {
-        vec![self.out]
+    fn outputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.out]
     }
     fn vjp(&self, _: &mut Graph<D>, _: &[Id]) -> Option<Vec<Id>> {
         None
     }
 
     fn eval(&self, ctx: &mut Context<D>) {
-        let inp_grad_tensor = ctx.checked_get(&self.inp_grad).clone();
+        let inp_grad_tensor = ctx.checked_get(&self.inp_grad);
 
         // If keep_dims was true, or if it was a full reduction to a scalar,
         // the shape is already correct for broadcasting. No op needed.
         if self.keep_dims || self.axis.is_empty() {
-            ctx.insert(self.out, inp_grad_tensor);
+            ctx.insert(self.out, inp_grad_tensor.clone());
             return;
         }
 

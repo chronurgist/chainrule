@@ -1,5 +1,3 @@
-use ndarray::Dim;
-
 use crate::{Floating, identity::Id};
 
 use core::ops::{Add, Mul, Neg, Sub};
@@ -74,9 +72,6 @@ impl<D: Floating> Item<D> for TensorData<D> {
                 self.shape()
             );
         }
-        self.clone()
-            .into_dimensionality::<Dim<[usize; 0]>>()
-            .unwrap()
-            .into_scalar()
+        self.first().copied().unwrap()
     }
 }

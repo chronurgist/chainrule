@@ -78,9 +78,9 @@ impl<D: Floating + 'static> TraceableFn<D> {
         g.push(Const::boxed(D::one(), seed));
         gradients.insert(scalar_output_id, seed);
 
-        let vjp_nodes = g.nodes.clone();
+        let forward_nodes = std::mem::take(&mut g.nodes);
 
-        for node in vjp_nodes.iter().rev() {
+        for node in forward_nodes.iter().rev() {
             let out_ids = node.outputs();
             let out_grads: Vec<_> = out_ids
                 .iter()
@@ -104,6 +104,10 @@ impl<D: Floating + 'static> TraceableFn<D> {
                 }
             }
         }
+
+        let mut vjp_nodes = g.nodes;
+        g.nodes = forward_nodes;
+        g.nodes.append(&mut vjp_nodes);
 
         let grads_out: Vec<_> = self
             .inputs
@@ -144,6 +148,7 @@ where
         self.to_owned().into_dyn()
     }
 }
+
 mod macros {
     use super::{EvalArgs, EvalOutputs, Floating, TensorData};
     macro_rules! as_owned_ty {

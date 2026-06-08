@@ -83,9 +83,8 @@ impl<D: Floating> Op<D> for ReshapeLike {
     fn eval(&self, ctx: &mut Context<D>) {
         let x = ctx.checked_get(&self.inp);
         let like = ctx.checked_get(&self.like);
-        let target = like.shape().to_vec();
         let y = x
-            .to_shape(target)
+            .to_shape(like.shape())
             .expect("reshape_like: element count mismatch")
             .to_owned();
         ctx.insert(self.out, y);
