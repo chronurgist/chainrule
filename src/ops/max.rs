@@ -111,12 +111,12 @@ impl<D: Floating + 'static> Op<D> for Max {
         Some(vec![grad_x])
     }
 
-    fn inputs(&self) -> Vec<Id> {
-        vec![self.inp]
+    fn inputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.inp]
     }
 
-    fn outputs(&self) -> Vec<Id> {
-        vec![self.out]
+    fn outputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.out]
     }
 }
 
@@ -160,12 +160,12 @@ impl<D: Floating + 'static> Op<D> for MaxGradMask {
         None
     }
 
-    fn inputs(&self) -> Vec<Id> {
-        vec![self.x, self.y]
+    fn inputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.x, self.y]
     }
 
-    fn outputs(&self) -> Vec<Id> {
-        vec![self.out]
+    fn outputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.out]
     }
 }
 

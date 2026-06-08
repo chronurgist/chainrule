@@ -16,11 +16,11 @@ impl<D: Floating> Const<D> {
 }
 
 impl<D: Floating + 'static> Op<D> for Const<D> {
-    fn inputs(&self) -> Vec<Id> {
-        vec![]
+    fn inputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![]
     }
-    fn outputs(&self) -> Vec<Id> {
-        vec![self.out]
+    fn outputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.out]
     }
     fn eval(&self, ctx: &mut Context<D>) {
         use ndarray::arr0;

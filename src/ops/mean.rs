@@ -41,7 +41,6 @@ impl<D: Floating + 'static> Op<D> for Mean {
 
     fn eval(&self, ctx: &mut Context<D>) {
         let x = ctx.checked_get(&self.inp);
-        let mut t = x.clone();
         // sum along axes
         if self.axis.is_empty() {
             // sum to scalar.
@@ -133,12 +132,12 @@ impl<D: Floating + 'static> Op<D> for Mean {
         Some(vec![grad_x])
     }
 
-    fn inputs(&self) -> Vec<Id> {
-        vec![self.inp]
+    fn inputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.inp]
     }
 
-    fn outputs(&self) -> Vec<Id> {
-        vec![self.out]
+    fn outputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.out]
     }
 }
 
@@ -172,7 +171,7 @@ mod test {
         let x = arr2(&[[1., 3., 2.], [4., 0., 4.]]).into_dyn();
         let (out,) = traced.eval()(&x);
         let expected = x
-            .clone()
+            .view()
             .into_dimensionality::<ndarray::Ix2>()
             .unwrap()
             .mean_axis(ndarray::Axis(1))

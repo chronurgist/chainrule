@@ -183,12 +183,12 @@ impl<D: Floating + 'static> Op<D> for MatMul {
         "matmul"
     }
 
-    fn inputs(&self) -> Vec<Id> {
-        vec![self.lhs, self.rhs]
+    fn inputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.lhs, self.rhs]
     }
 
-    fn outputs(&self) -> Vec<Id> {
-        vec![self.out]
+    fn outputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.out]
     }
 
     fn eval(&self, ctx: &mut Context<D>) {

@@ -21,8 +21,8 @@ impl<D: Floating> Op<D> for Neg {
     }
 
     fn eval(&self, ctx: &mut Context<D>) {
-        let t = ctx.checked_get(&self.inp).clone();
-        ctx.insert(self.out, -t);
+        let t = ctx.checked_get(&self.inp);
+        ctx.insert(self.out, t.mapv(|v| -v));
     }
 
     fn vjp(&self, g: &mut Graph<D>, out_grads: &[Id]) -> Option<Vec<Id>> {
@@ -32,12 +32,12 @@ impl<D: Floating> Op<D> for Neg {
         Some(vec![out])
     }
 
-    fn inputs(&self) -> Vec<Id> {
-        vec![self.inp]
+    fn inputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.inp]
     }
 
-    fn outputs(&self) -> Vec<Id> {
-        vec![self.out]
+    fn outputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.out]
     }
 }
 

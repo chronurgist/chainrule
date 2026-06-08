@@ -19,22 +19,25 @@ impl<D: Floating + 'static> Op<D> for TransposeDefault {
         "transpose_default"
     }
 
-    fn inputs(&self) -> Vec<Id> {
-        vec![self.inp]
+    fn inputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.inp]
     }
 
-    fn outputs(&self) -> Vec<Id> {
-        vec![self.out]
+    fn outputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.out]
     }
 
     fn eval(&self, ctx: &mut Context<D>) {
-        let mut t = ctx.checked_get(&self.inp).clone();
+        let t = ctx.checked_get(&self.inp);
         let shape = t.shape();
         let rank = shape.len();
         if rank > 1 {
-            t.swap_axes(rank - 1, rank - 2);
+            let mut axes: Vec<usize> = (0..rank).collect();
+            axes.swap(rank - 1, rank - 2);
+            ctx.insert(self.out, t.view().permuted_axes(axes).to_owned());
+        } else {
+            ctx.insert(self.out, t.clone());
         }
-        ctx.insert(self.out, t);
     }
 
     fn vjp(&self, g: &mut Graph<D>, out_grads: &[Id]) -> Option<Vec<Id>> {
@@ -65,18 +68,20 @@ impl<D: Floating + 'static> Op<D> for Transpose {
         "transpose"
     }
 
-    fn inputs(&self) -> Vec<Id> {
-        vec![self.inp]
+    fn inputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.inp]
     }
 
-    fn outputs(&self) -> Vec<Id> {
-        vec![self.out]
+    fn outputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.out]
     }
 
     fn eval(&self, ctx: &mut Context<D>) {
-        let mut t = ctx.checked_get(&self.inp).clone();
-        t.swap_axes(self.a1, self.a2);
-        ctx.insert(self.out, t);
+        let t = ctx.checked_get(&self.inp);
+        let rank = t.ndim();
+        let mut axes: Vec<usize> = (0..rank).collect();
+        axes.swap(self.a1, self.a2);
+        ctx.insert(self.out, t.view().permuted_axes(axes).to_owned());
     }
 
     fn vjp(&self, g: &mut Graph<D>, out_grads: &[Id]) -> Option<Vec<Id>> {

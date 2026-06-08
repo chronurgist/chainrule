@@ -38,12 +38,12 @@ impl<D: Floating> Op<D> for Reshape {
         Some(vec![out])
     }
 
-    fn inputs(&self) -> Vec<Id> {
-        vec![self.inp]
+    fn inputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.inp]
     }
 
-    fn outputs(&self) -> Vec<Id> {
-        vec![self.out]
+    fn outputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.out]
     }
 }
 
@@ -99,10 +99,10 @@ impl<D: Floating> Op<D> for ReshapeLike {
         Some(vec![out])
     }
 
-    fn inputs(&self) -> Vec<Id> {
-        vec![self.inp, self.like]
+    fn inputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.inp, self.like]
     }
-    fn outputs(&self) -> Vec<Id> {
-        vec![self.out]
+    fn outputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.out]
     }
 }

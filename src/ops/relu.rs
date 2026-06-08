@@ -43,11 +43,11 @@ impl<D: Floating + 'static> Op<D> for ReLUGradMask {
         // d(1[x>0])/dx is 0 almost everywhere, so no backward pass
         None
     }
-    fn inputs(&self) -> Vec<Id> {
-        vec![self.inp]
+    fn inputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.inp]
     }
-    fn outputs(&self) -> Vec<Id> {
-        vec![self.out]
+    fn outputs(&self) -> crate::ops::IdList {
+        smallvec::smallvec![self.out]
     }
 }
 
