@@ -198,11 +198,11 @@ mod test {
         let x = arr2(&[[1., 3., 2.], [4., 0., 4.]]).into_dyn();
         let (out,) = traced.eval()(&x);
         let expected = x
-            .clone()
+            .view()
             .into_dimensionality::<ndarray::Ix2>()
             .unwrap()
             .map_axis(ndarray::Axis(1), |lane| {
-                lane.iter().cloned().fold(f32::NEG_INFINITY, f32::max)
+                lane.iter().copied().fold(f32::NEG_INFINITY, f32::max)
             })
             .into_dyn();
         assert_eq!(out, expected);
