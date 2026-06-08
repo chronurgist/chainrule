@@ -30,6 +30,9 @@ pub use sum::Sum;
 pub use transpose::{Transpose, TransposeDefault};
 
 use crate::{context::Context, graph::Graph, identity::Id};
+use smallvec::SmallVec;
+
+pub type IdList = SmallVec<[Id; 2]>;
 
 pub trait OpClone<D> {
     fn boxed_clone(&self) -> Box<dyn Op<D>>;
@@ -57,9 +60,9 @@ pub trait Op<D>: Debug + OpClone<D> {
     fn vjp(&self, g: &mut Graph<D>, out_grads: &[Id]) -> Option<Vec<Id>>;
 
     /// returns the input(s) to the operation.
-    fn inputs(&self) -> Vec<Id>;
+    fn inputs(&self) -> IdList;
     /// returns the output(s) to the operation.
-    fn outputs(&self) -> Vec<Id>;
+    fn outputs(&self) -> IdList;
 }
 
 impl<D> Clone for Box<dyn Op<D>> {
@@ -135,12 +138,12 @@ pub mod macros {
                     ctx.insert(self.out, ($forward)(x, y));
                 }
 
-                fn inputs(&self) -> Vec<$crate::identity::Id> {
-                    vec![self.lhs, self.rhs]
+                fn inputs(&self) -> $crate::ops::IdList {
+                    smallvec::smallvec![self.lhs, self.rhs]
                 }
 
-                fn outputs(&self) -> Vec<$crate::identity::Id> {
-                    vec![self.out]
+                fn outputs(&self) -> $crate::ops::IdList {
+                    smallvec::smallvec![self.out]
                 }
             }
         };
@@ -178,8 +181,8 @@ pub mod macros {
                     let grad = ($vjp_rule)(self, g, og);
                     Some(vec![grad])
                 }
-                fn inputs(&self) -> Vec<Id> {
-                    vec![self.inp]
+                fn inputs(&self) -> $crate::ops::IdList {
+                    smallvec::smallvec![self.inp]
                 }
                 fn outputs(&self) -> Vec<Id> {
                     vec![self.out]
