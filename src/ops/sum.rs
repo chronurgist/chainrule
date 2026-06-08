@@ -42,14 +42,23 @@ impl<D: Floating> Op<D> for Sum {
             ndarray::arr0(sum_val).into_dyn()
         } else {
             // else sum along the specified axes.
-            let mut t = t_in;
-            for axis in &self.axis {
+            let mut axis_iter = self.axis.iter();
+            let first_axis = *axis_iter.next().unwrap();
+            let mut t = {
+                let a = Axis(first_axis);
+                if self.keep_dims {
+                    t_in.sum_axis(a).insert_axis(a)
+                } else {
+                    t_in.sum_axis(a)
+                }
+            };
+            for axis in axis_iter {
                 let a = Axis(*axis);
                 t = if self.keep_dims {
                     t.sum_axis(a).insert_axis(a)
                 } else {
                     t.sum_axis(a)
-                }
+                };
             }
             t
         };
@@ -146,10 +155,10 @@ impl<D: Floating> Op<D> for ReduceToLike {
             .enumerate()
             .rev()
             .zip_longest(b_shape.iter().rev())
-            .fold(t, |acc, tuple| {
-                match tuple {
-                    Left((axis,_)) => acc.sum_axis(Axis(axis)),
-                    Both((_, &a), &b) if a == b => acc, // same dim, do nothing.
+            .fold(inp.clone(), |acc, pair| {
+                match pair {
+                    Left((axis, _)) => acc.sum_axis(Axis(axis)),
+                    Both((_, &a), &b) if a == b => acc,
                     Both((axis, _), &1) => acc.sum_axis(Axis(axis)).insert_axis(Axis(axis)),
                     _ => panic!(
                         "reduce_to_like: cannot reduce inp -> like:  inp: {a_shape:?}, like: {b_shape:?}"
@@ -195,10 +204,12 @@ pub struct ReshapeForBroadcast {
 
 impl ReshapeForBroadcast {
     pub fn new(inp_grad: Id, out: Id, axis: impl Into<Vec<usize>>, keep_dims: bool) -> Self {
+        let mut axis = axis.into();
+        axis.sort_unstable();
         Self {
             inp_grad,
             out,
-            axis: axis.into(),
+            axis,
             keep_dims,
         }
     }
@@ -229,10 +240,7 @@ impl<D: Floating> Op<D> for ReshapeForBroadcast {
         }
 
         let mut intermediate_shape = inp_grad_tensor.shape().to_vec();
-        let mut sorted_axes = self.axis.clone();
-        sorted_axes.sort_unstable(); // Sort to insert into the correct positions
-
-        for &axis in &sorted_axes {
+        for &axis in &self.axis {
             intermediate_shape.insert(axis, 1);
         }
 

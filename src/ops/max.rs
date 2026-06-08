@@ -3,7 +3,14 @@ use ndarray::Axis;
 use crate::{
     Floating, Graph, Id, TraceSession, Tracer,
     context::Context,
-    ops::{Op, broadcast::BroadcastLike, div::Div, mul::Mul, sum::Sum},
+    ops::{
+        Op,
+        broadcast::BroadcastLike,
+        div::Div,
+        mul::Mul,
+        sum::{ReshapeForBroadcast, Sum},
+    },
+    tracing::TensorData,
 };
 
 #[derive(Debug, Clone)]
@@ -34,42 +41,75 @@ impl<D: Floating + 'static> Op<D> for Max {
     }
 
     fn eval(&self, ctx: &mut Context<D>) {
-        let mut t = ctx.checked_get(&self.inp).clone();
-        for ax in &self.axis {
+        let x = ctx.checked_get(&self.inp);
+        if self.axis.is_empty() {
+            ctx.insert(self.out, x.clone());
+            return;
+        }
+        let add_axis_if = |insert: bool, arr: TensorData<D>, axis: Axis| {
+            if insert { arr.insert_axis(axis) } else { arr }
+        };
+        let mut axis_iter = self.axis.iter();
+        let first_axis = *axis_iter.next().unwrap();
+        let mut t = {
+            let a = Axis(first_axis);
+            let reduced = x.fold_axis(
+                a,
+                D::neg_infinity(),
+                |acc, x| if acc > x { *acc } else { *x },
+            );
+            add_axis_if(self.keep_dims, reduced, a)
+        };
+        for ax in axis_iter {
             let a = Axis(*ax);
             let reduced = t.fold_axis(
                 a,
                 D::neg_infinity(),
                 |acc, x| if acc > x { *acc } else { *x },
             );
-
-            t = if self.keep_dims {
-                reduced.insert_axis(a)
-            } else {
-                reduced
-            };
+            t = add_axis_if(self.keep_dims, reduced, a);
         }
         ctx.insert(self.out, t);
     }
 
     fn vjp(&self, g: &mut Graph<D>, out_grads: &[Id]) -> Option<Vec<Id>> {
         // grad wrt x:
-        // - Broadcast og to x's shape
+        // - Broadcast og to x's shape (via reshape_for_broadcast + broadcast_like)
         // - Broadcast y (max result) back to x's shape
         // - mask = 1[x == y_broadcast]
         // - count = sum(mask, axis)
         // - grad = (og_broadcast * mask) / broadcast_like(count, like=x)
         let og = *out_grads.first()?;
 
+        let og_reshaped = {
+            let out = g.fresh();
+            g.push(Box::new(ReshapeForBroadcast::new(
+                og,
+                out,
+                self.axis.clone(),
+                self.keep_dims,
+            )));
+            out
+        };
         let og_bc = {
             let out = g.fresh();
-            g.push(Box::new(BroadcastLike::new(og, self.inp, out)));
+            g.push(Box::new(BroadcastLike::new(og_reshaped, self.inp, out)));
             out
         };
 
+        let y_reshaped = {
+            let out = g.fresh();
+            g.push(Box::new(ReshapeForBroadcast::new(
+                self.out,
+                out,
+                self.axis.clone(),
+                self.keep_dims,
+            )));
+            out
+        };
         let y_bc = {
             let out = g.fresh();
-            g.push(Box::new(BroadcastLike::new(self.out, self.inp, out)));
+            g.push(Box::new(BroadcastLike::new(y_reshaped, self.inp, out)));
             out
         };
 
@@ -90,9 +130,19 @@ impl<D: Floating + 'static> Op<D> for Max {
             out
         };
 
+        let count_reshaped = {
+            let out = g.fresh();
+            g.push(Box::new(ReshapeForBroadcast::new(
+                count_y_shape,
+                out,
+                self.axis.clone(),
+                self.keep_dims,
+            )));
+            out
+        };
         let count_bc = {
             let out = g.fresh();
-            g.push(Box::new(BroadcastLike::new(count_y_shape, self.inp, out)));
+            g.push(Box::new(BroadcastLike::new(count_reshaped, self.inp, out)));
             out
         };
 

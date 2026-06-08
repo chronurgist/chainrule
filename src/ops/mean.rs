@@ -56,7 +56,17 @@ impl<D: Floating + 'static> Op<D> for Mean {
             return;
         }
 
-        for ax in &self.axis {
+        let mut axis_iter = self.axis.iter();
+        let first_axis = *axis_iter.next().unwrap();
+        let mut t = {
+            let a = Axis(first_axis);
+            if self.keep_dims {
+                x.sum_axis(a).insert_axis(a)
+            } else {
+                x.sum_axis(a)
+            }
+        };
+        for ax in axis_iter {
             let a = Axis(*ax);
             t = if self.keep_dims {
                 t.sum_axis(a).insert_axis(a)
