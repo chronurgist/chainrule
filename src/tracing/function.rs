@@ -5,7 +5,7 @@ use crate::{
     context::Context,
     graph::Graph,
     identity::Id,
-    ops::{Add, Const, Sum},
+    ops::{Add, Const, Sum, broadcast::BroadcastLike},
     tracing::TensorData,
 };
 
@@ -114,9 +114,11 @@ impl<D: Floating + 'static> TraceableFn<D> {
             .iter()
             .map(|i| {
                 gradients.get(i).copied().unwrap_or_else(|| {
-                    let z = g.fresh();
-                    g.push(Box::new(Const::new(D::zero(), z)));
-                    z
+                    let scalar = g.fresh();
+                    g.push(Box::new(Const::new(D::zero(), scalar)));
+                    let zero = g.fresh();
+                    g.push(Box::new(BroadcastLike::new(scalar, *i, zero)));
+                    zero
                 })
             })
             .collect();
