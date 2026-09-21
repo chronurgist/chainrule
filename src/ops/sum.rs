@@ -4,7 +4,7 @@ use ndarray::Axis;
 use crate::{
     Floating, Graph, Id, TraceSession, Tracer,
     context::Context,
-    ops::{Op, broadcast::BroadcastLike},
+    ops::{Op, broadcast::BroadcastLike, reshape::ReshapeLike},
 };
 
 #[derive(Debug, Clone)]
@@ -225,8 +225,11 @@ impl<D: Floating> Op<D> for ReshapeForBroadcast {
     fn outputs(&self) -> crate::ops::IdList {
         smallvec::smallvec![self.out]
     }
-    fn vjp(&self, _: &mut Graph<D>, _: &[Id]) -> Option<Vec<Id>> {
-        None
+    fn vjp(&self, g: &mut Graph<D>, out_grads: &[Id]) -> Option<Vec<Id>> {
+        let out_grad = *out_grads.first()?;
+        let out = g.fresh();
+        g.push(Box::new(ReshapeLike::new(out_grad, out, self.inp_grad)));
+        Some(vec![out])
     }
 
     fn eval(&self, ctx: &mut Context<D>) {
