@@ -73,13 +73,19 @@ impl<D: Floating + 'static> Op<D> for Max {
     }
 
     fn vjp(&self, g: &mut Graph<D>, out_grads: &[Id]) -> Option<Vec<Id>> {
+        let og = *out_grads.first()?;
+
+        // max with no axes is the identity, so the gradient is just og
+        if self.axis.is_empty() {
+            return Some(vec![og]);
+        }
+
         // grad wrt x:
         // - Broadcast og to x's shape (via reshape_for_broadcast + broadcast_like)
         // - Broadcast y (max result) back to x's shape
         // - mask = 1[x == y_broadcast]
         // - count = sum(mask, axis)
         // - grad = (og_broadcast * mask) / broadcast_like(count, like=x)
-        let og = *out_grads.first()?;
 
         let og_reshaped = {
             let out = g.fresh();

@@ -527,6 +527,22 @@ mod tests {
     }
 
     #[test]
+    fn test_max_empty_axis_backward() {
+        #[trace]
+        fn f(x: Tensor) -> Tensor {
+            x.max(vec![], false).sum(vec![], false)
+        }
+        let traced = trace_fn::<f32>(f);
+        let x = arr1(&[1.0, 2.0, 3.0]).into_dyn();
+
+        let (out,) = traced.eval()(&x);
+        assert_all_close(&out, &arr0(6.0).into_dyn(), 1e-6);
+
+        let (grad_x,) = traced.grad().eval()(&x);
+        assert_all_close(&grad_x, &Array::<f32, _>::ones(3).into_dyn(), 1e-6);
+    }
+
+    #[test]
     fn test_reshape_backward() {
         #[trace]
         fn f(x: Tensor) -> Tensor {
