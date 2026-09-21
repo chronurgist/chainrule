@@ -13,6 +13,8 @@
 # source tree
 !src/
 !src/**/*
+!tests/
+!tests/**/*
 
 # macro crate
 !chainrule-macros/
